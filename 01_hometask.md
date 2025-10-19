@@ -6,4 +6,4 @@ It may be considered a client–server monolith with a shared database - even th
 **Task 2**
 Draw the architectural diagram of the solution as if you were designing it from scratch. Provide pros and cons of the two solutions.
 
-The main idea is to separate business logic from the presentation, and for that Application Layer service is added. That service is the main point that handles API requests from the other applications. If needed, DAL can be separated further into independent layer.
+The main idea is to separate business logic from the presentation into microservices that have their own separate databases. Communication between these services is performed via message broker.
