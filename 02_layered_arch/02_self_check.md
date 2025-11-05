@@ -6,11 +6,18 @@
 
 1. Name examples of the layered architecture. Do they differ or just extend each other?
 
-Two main examples are layered and clean architecture, where application is divided into layers, each serving a specific role for separation of concerns (presentation, business logic, infrastructure, etc). 
+Two main examples are layered and clean architecture, where application is divided into layers, each serving a specific role for separation of concerns (presentation, business logic, infrastructure, etc).
 
-In layered architecture, the flow is typically: presentation -> business logic -> infrastructure, and each layer only depends on the one below it. 
+In layered architecture, the flow is typically: presentation -> business logic -> infrastructure, and each layer only depends on the one below it.
 
 Clean architecture is an extended version of layered architecture, where the layers are "reversed" and the domain logic sits at the center independently of presentation or database. in this model, dependencies point inwards toward the domain.
+
+* N-Tier/3-Tier: Special Layered arch, as (some) layers are physically separated.
+* Clean: Different terms and meanings. Different organization of responsibilities, resulting with different dependency direction (Layered: downward (Presenter -> Logic (business/domain) -> Persistence), Clean: inward (Presenter -> Logic (core) <- Persistence) - meaning dependency chain is not linear, as the persistence layer's direction is the opposite).
+* Onion: Almost the same as Clean. Different (DDD) terminology for very similar purposes - "Domain Model", "Application Services" are DDD terms.
+* Hexagonal / Ports \& Adapters: While Clean describes an architecture with Circles and layers in general, Hexagonal rather describes the connection points of the "Interface Adapters" and their connections/implementations in "Frameworks and Drivers" Layer.
+
+
 
 
 
@@ -26,7 +33,7 @@ This layered architecture example is incorrect because there is a cyclic depende
 
 3\. Is DDD a type of layered architecture? What is Anemic model? Is it really an antipattern?
 
-DDD is not necessarily layered architecture, it is more of an approach that helps to align the software model closely with the real-world business domain. However, DDD often adopts some type of layered architecture. 
+DDD is not necessarily layered architecture, it is more of an approach that helps to align the software model closely with the real-world business domain. However, DDD often adopts some type of layered architecture.
 
 Anemic model is a model that does not contain any business logic, only fields or properties to store the data. While it is generally considered an antipattern in DDD, it can be a reasonable choice in simple systems.
 
@@ -38,7 +45,7 @@ Anemic model is a model that does not contain any business logic, only fields or
 
 Architectural anti-patterns are common bad practices that introduce negative consequences.
 
-On my current project, I have observed cargo cult programming, particularly in a couple of older applications written in C++. Since most of the developers did not write the original code and lack C++ experience, they apply solutions similar to already existing ones without fully understanding them. 
+On my current project, I have observed cargo cult programming, particularly in a couple of older applications written in C++. Since most of the developers did not write the original code and lack C++ experience, they apply solutions similar to already existing ones without fully understanding them.
 
 Also, there are some boat anchors. For example, after a major modernization, some old classes were kept for a transitional period on purpose. Even though it is considered an anti-pattern, it has been useful in situations when there are unexpected issues that require comparison with the old implementation.
 
