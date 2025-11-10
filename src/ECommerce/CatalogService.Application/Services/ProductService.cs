@@ -14,11 +14,12 @@ namespace CatalogService.Core.Services
 			this.mapper = mapper;
 		}
 
-		public async Task AddAsync(ProductDto product, CancellationToken cancellationToken = default)
+		public async Task<ProductDto?> AddAsync(ProductDto product, CancellationToken cancellationToken = default)
 		{
 			if (product == null)
 				throw new ArgumentNullException(nameof(product));
-			await productRepository.AddAsync(mapper.Map<Product>(product), cancellationToken);
+			var added = await productRepository.AddAsync(mapper.Map<Product>(product), cancellationToken);
+			return added == null ? null : mapper.Map<ProductDto>(added);
 		}
 
 		public async Task<bool> DeleteAsync(int productId, CancellationToken cancellationToken = default)
@@ -34,9 +35,15 @@ namespace CatalogService.Core.Services
 			return result == null ? null : mapper.Map<ProductDto>(result);
 		}
 
-		public async Task<IEnumerable<ProductDto>> ListAsync(CancellationToken cancellationToken = default)
+		public async Task<IEnumerable<ProductDto>> ListAsync(int? categoryId = null, CancellationToken cancellationToken = default)
 		{
-			return mapper.Map<IEnumerable<ProductDto>>(await productRepository.ListAsync(cancellationToken));
+			var products = await productRepository.ListAsync(cancellationToken);
+			if (categoryId.HasValue)
+			{
+				products = products.Where(p => p.CategoryId == categoryId.Value);
+			}
+
+			return mapper.Map<IEnumerable<ProductDto>>(products);
 		}
 
 		public async Task UpdateAsync(ProductDto product, CancellationToken cancellationToken = default)

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CatalogService.Infrastructure
 {
-	public class CatalogContext : DbContext
+	public partial class CatalogContext : DbContext
 	{
 		private readonly int _maxImageUrlLength = 2000;
 
@@ -71,6 +71,10 @@ namespace CatalogService.Infrastructure
 
 				entity.ToTable(t => t.HasCheckConstraint("CK_Product_Amount_Positive", "Amount > 0"));
 			});
+
+			OnModelCreatingPartial(modelBuilder);
 		}
+
+		partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 	}
 }
