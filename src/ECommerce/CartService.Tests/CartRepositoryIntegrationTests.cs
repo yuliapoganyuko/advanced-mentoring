@@ -7,22 +7,9 @@ namespace CartService.Tests
 	[TestClass]
 	public sealed class CartRepositoryIntegrationTests
 	{
-		private ConstructorInfo GetNonPublicCtor()
-		{
-			var ctor = typeof(CartRepository).GetConstructor(
-				BindingFlags.Instance | BindingFlags.NonPublic,
-				null,
-				new Type[] { typeof(ILiteDatabase) },
-				null);
-
-			Assert.IsNotNull(ctor, "Could not find non-public constructor for CartRepository.");
-			return ctor!;
-		}
-
 		private CartRepository CreateRepository(ILiteDatabase db)
 		{
-			var ctor = GetNonPublicCtor();
-			return (CartRepository)ctor.Invoke(new object[] { db });
+			return new CartRepository(db);
 		}
 
 		private string CreateTempDatabasePath() =>
@@ -133,7 +120,7 @@ namespace CartService.Tests
 		}
 
 		[TestMethod]
-		public void AddCartItem_WhenCartDoesNotExist_DoesNotCreateCart()
+		public void AddCartItem_WhenCartDoesNotExist_CreatesCart()
 		{
 			var dbPath = CreateTempDatabasePath();
 			try
@@ -147,7 +134,7 @@ namespace CartService.Tests
 					repo.AddCartItem(nonExistingCartId, item);
 
 					var col = db.GetCollection<Cart>();
-					Assert.IsFalse(col.FindAll().Any(), "No cart should be created when AddCartItem is called for a missing cart.");
+					Assert.IsTrue(col.FindById(nonExistingCartId) != null, "Cart should be created when AddCartItem is called for a missing cart.");
 				}
 			}
 			finally

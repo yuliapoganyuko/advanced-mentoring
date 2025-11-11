@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36603.0 d17.14
+VisualStudioVersion = 17.14.36603.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartService", "CartService\CartService.csproj", "{0007B0A9-525F-4840-BC73-C2B522AFCB80}"
 EndProject
@@ -14,6 +14,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.Infrastructure", "CatalogService.Infrastructure\CatalogService.Infrastructure.csproj", "{2586D55E-B36B-4325-9F96-0F5F9BC98DFF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.Infrastructure.Tests", "CatalogService.Infrastructure.Tests\CatalogService.Infrastructure.Tests.csproj", "{F585705D-9B49-4341-8FEA-5D4247AC4A9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartService.WebApi", "CartService.WebApi\CartService.WebApi.csproj", "{81D94206-EE3B-4955-A421-878320CD2CB9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CartService.WebApi.Tests", "CartService.WebApi.Tests\CartService.WebApi.Tests.csproj", "{1653F61C-5697-4040-952F-96FC82C56569}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.WebApi", "CatalogService.WebApi\CatalogService.WebApi.csproj", "{BD31F46E-D602-4C72-B46A-67734F12EB88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.WebApi.Tests", "CatalogService.WebApi.Tests\CatalogService.WebApi.Tests.csproj", "{908C63C2-8FA2-41AC-8438-F404BBBBB27E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +53,22 @@ Global
 		{F585705D-9B49-4341-8FEA-5D4247AC4A9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F585705D-9B49-4341-8FEA-5D4247AC4A9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F585705D-9B49-4341-8FEA-5D4247AC4A9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81D94206-EE3B-4955-A421-878320CD2CB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81D94206-EE3B-4955-A421-878320CD2CB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81D94206-EE3B-4955-A421-878320CD2CB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81D94206-EE3B-4955-A421-878320CD2CB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1653F61C-5697-4040-952F-96FC82C56569}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1653F61C-5697-4040-952F-96FC82C56569}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1653F61C-5697-4040-952F-96FC82C56569}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1653F61C-5697-4040-952F-96FC82C56569}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD31F46E-D602-4C72-B46A-67734F12EB88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD31F46E-D602-4C72-B46A-67734F12EB88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD31F46E-D602-4C72-B46A-67734F12EB88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD31F46E-D602-4C72-B46A-67734F12EB88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

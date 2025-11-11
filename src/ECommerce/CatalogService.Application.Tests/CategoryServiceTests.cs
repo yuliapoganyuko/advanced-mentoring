@@ -40,12 +40,18 @@ namespace CatalogService.Core.Tests
 			var entity = new Category { Id = 7, Name = "MyCategory" };
 
 			mapperMock.Setup(m => m.Map<Category>(dto)).Returns(entity);
-			repositoryMock.Setup(r => r.AddAsync(entity, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+			repositoryMock.Setup(r => r.AddAsync(entity, It.IsAny<CancellationToken>())).ReturnsAsync(entity);
+			mapperMock.Setup(m => m.Map<CategoryDto>(entity)).Returns(dto);
 
-			await categoryService.AddAsync(dto, CancellationToken.None);
+			var result = await categoryService.AddAsync(dto, CancellationToken.None);
+
+			Assert.IsNotNull(result);
+			Assert.AreEqual(dto.Id, result!.Id);
+			Assert.AreEqual(dto.Name, result.Name);
 
 			mapperMock.Verify(m => m.Map<Category>(dto), Times.Once);
 			repositoryMock.Verify(r => r.AddAsync(entity, It.IsAny<CancellationToken>()), Times.Once);
+			mapperMock.Verify(m => m.Map<CategoryDto>(entity), Times.Once);
 		}
 
 		[TestMethod]

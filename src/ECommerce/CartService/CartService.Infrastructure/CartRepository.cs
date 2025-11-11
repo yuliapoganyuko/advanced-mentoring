@@ -7,7 +7,7 @@ namespace CartService.Infrastructure
 		ILiteDatabase liteDatabase;
 		ILiteCollection<Cart> cartCollection;
 
-		CartRepository(ILiteDatabase liteDatabase)
+		public CartRepository(ILiteDatabase liteDatabase)
 		{
 			this.liteDatabase = liteDatabase;
 			this.cartCollection = liteDatabase.GetCollection<Cart>();
@@ -16,12 +16,20 @@ namespace CartService.Infrastructure
 		public void AddCartItem(Guid cartId, CartItem item)
 		{
 			Cart cart = cartCollection.FindById(cartId);
-			if (cart != null)
+			if (cart == null)
+			{
+				cartCollection.Insert(new Cart
+				{
+					Id = cartId,
+					Items = new List<CartItem> { item }
+				});
+			}
+			else
 			{
 				cart.Items.Add(item);
 				cartCollection.Update(cart);
-				liteDatabase.Commit();
 			}
+			liteDatabase.Commit();
 		}
 
 		public IEnumerable<CartItem>? GetCartItems(Guid cartId)

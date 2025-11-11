@@ -1,0 +1,78 @@
+@CatalogService.WebApi_HostAddress = https://localhost:7116
+
+GET {{CatalogService.WebApi_HostAddress}}/api/categories
+
+###
+
+POST {{CatalogService.WebApi_HostAddress}}/api/categories
+Content-Type: application/json
+
+{
+		"name": "Category 2"
+}
+
+###
+
+@id=2
+DELETE {{CatalogService.WebApi_HostAddress}}/api/categories/{{id}}
+
+###
+
+@id=3
+GET {{CatalogService.WebApi_HostAddress}}/api/categories/{{id}}
+
+###
+
+@id=1
+PUT {{CatalogService.WebApi_HostAddress}}/api/categories/{{id}}
+Content-Type: application/json
+
+{
+		"id": 1,
+		"name": "Updated Category 1",
+		"parentCategoryId": 2
+}
+
+###
+
+GET {{CatalogService.WebApi_HostAddress}}/api/products
+
+###
+
+POST {{CatalogService.WebApi_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+	"name": "Product 2",
+	"categoryId": 1,
+	"description": "This is a sample product.",
+	"price": 29.99,
+	"amount": 1
+}
+
+###
+
+@id=1
+DELETE {{CatalogService.WebApi_HostAddress}}/api/products/{{id}}
+
+###
+
+@id=2
+GET {{CatalogService.WebApi_HostAddress}}/api/products/{{id}}
+
+###
+
+@id=2
+PUT {{CatalogService.WebApi_HostAddress}}/api/products/{{id}}
+Content-Type: application/json
+
+{
+	"id": 2,
+	"name": "Updated Product 2",
+	"categoryId": 1,
+	"description": "This is a sample product.",
+	"price": 29.99,
+	"amount": 2
+}
+
+###

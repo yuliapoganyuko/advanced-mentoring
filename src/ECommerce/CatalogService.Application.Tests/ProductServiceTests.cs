@@ -36,15 +36,22 @@ namespace CatalogService.Core.Tests
 		[TestMethod]
 		public async Task AddAsync_ValidProduct_MapsAndCallsRepository()
 		{
-			var dto = new ProductDto { Id = 7, Name = "MyProduct", CategoryId = 1, Price = 9.99m, Amount = 10 };
+			var dto = new ProductDto { Name = "MyProduct", CategoryId = 1, Price = 9.99m, Amount = 10 }; // default 0
 			var entity = new Product { Id = 7, Name = "MyProduct", CategoryId = 1, Price = 9.99m, Amount = 10 };
+			var added = new ProductDto { Id = 7, Name = "MyProduct", CategoryId = 1, Price = 9.99m, Amount = 10 }; // default 0
 
 			mapperMock.Setup(m => m.Map<Product>(dto)).Returns(entity);
-			repositoryMock.Setup(r => r.AddAsync(entity, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+			repositoryMock.Setup(r => r.AddAsync(entity, It.IsAny<CancellationToken>())).ReturnsAsync(entity);
+			mapperMock.Setup(m => m.Map<ProductDto>(entity)).Returns(added);
 
-			await productService.AddAsync(dto, CancellationToken.None);
+			var result = await productService.AddAsync(dto, CancellationToken.None);
+
+			Assert.IsNotNull(result);
+			Assert.AreNotEqual(dto.Id, result!.Id);
+			Assert.AreEqual(dto.Name, result.Name);
 
 			mapperMock.Verify(m => m.Map<Product>(dto), Times.Once);
+			repositoryMock.Verify(r => r.AddAsync(entity, It.IsAny<CancellationToken>()), Times.Once);
 			repositoryMock.Verify(r => r.AddAsync(entity, It.IsAny<CancellationToken>()), Times.Once);
 		}
 
@@ -139,7 +146,7 @@ namespace CatalogService.Core.Tests
 			repositoryMock.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(entities);
 			mapperMock.Setup(m => m.Map<IEnumerable<ProductDto>>(entities)).Returns(dtos);
 
-			var result = await productService.ListAsync(CancellationToken.None);
+			var result = await productService.ListAsync(null, CancellationToken.None);
 
 			Assert.IsNotNull(result);
 			CollectionAssert.AreEqual(new List<ProductDto>(dtos), new List<ProductDto>(result));

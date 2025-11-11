@@ -14,11 +14,12 @@ namespace CatalogService.Core.Services
 			this.mapper = mapper;
 		}
 
-		public async Task AddAsync(CategoryDto category, CancellationToken cancellationToken = default)
+		public async Task<CategoryDto?> AddAsync(CategoryDto category, CancellationToken cancellationToken = default)
 		{
 			if (category == null)
 				throw new ArgumentNullException(nameof(category));
-			await categoryRepository.AddAsync(mapper.Map<Category>(category), cancellationToken);
+			var added = await categoryRepository.AddAsync(mapper.Map<Category>(category), cancellationToken);
+			return added == null ? null : mapper.Map<CategoryDto>(added);
 		}
 
 		public async Task<bool> DeleteAsync(int categoryId, CancellationToken cancellationToken = default)

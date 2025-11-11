@@ -22,14 +22,7 @@ namespace CartService.Tests
 
 		private CartRepository CreateRepository()
 		{
-			var ctor = typeof(CartRepository).GetConstructor(
-				BindingFlags.Instance | BindingFlags.NonPublic,
-				null,
-				new Type[] { typeof(ILiteDatabase) },
-				null);
-
-			Assert.IsNotNull(ctor, "Could not find non-public constructor for CartRepository.");
-			return (CartRepository)ctor!.Invoke(new object[] { dbMock.Object });
+			return new CartRepository(dbMock.Object);
 		}
 
 		[TestMethod]
@@ -52,7 +45,7 @@ namespace CartService.Tests
 		}
 
 		[TestMethod]
-		public void AddCartItem_WhenCartDoesNotExist_DoesNotUpdateOrCommit()
+		public void AddCartItem_WhenCartDoesNotExist_Commits()
 		{
 			// Arrange
 			collectionMock.Setup(c => c.FindById(It.IsAny<BsonValue>())).Returns((Cart?)null);
@@ -63,8 +56,7 @@ namespace CartService.Tests
 			repo.AddCartItem(Guid.NewGuid(), item);
 
 			// Assert
-			collectionMock.Verify(c => c.Update(It.IsAny<Cart>()), Times.Never());
-			dbMock.Verify(d => d.Commit(), Times.Never());
+			dbMock.Verify(d => d.Commit(), Times.Once());
 		}
 
 		[TestMethod]

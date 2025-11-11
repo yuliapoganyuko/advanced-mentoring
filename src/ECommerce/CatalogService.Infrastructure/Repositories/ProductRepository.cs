@@ -13,10 +13,11 @@ namespace CatalogService.Infrastructure.Repositories
 			this.context = context;
 		}
 
-		public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
+		public async Task<Product?> AddAsync(Product product, CancellationToken cancellationToken = default)
 		{
-			await context.Products.AddAsync(product, cancellationToken);
+			var added = await context.Products.AddAsync(product, cancellationToken);
 			await context.SaveChangesAsync(cancellationToken);
+			return added.Entity;
 		}
 
 		public async Task<bool> DeleteAsync(int productId, CancellationToken cancellationToken = default)
