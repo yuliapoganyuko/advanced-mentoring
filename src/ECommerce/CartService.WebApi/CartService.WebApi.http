@@ -1,0 +1,31 @@
+@CartService.WebApi_HostAddress = https://localhost:7134
+
+@cartId=b43ae66b-7189-4fd5-b6c3-5ea6c96927fc
+POST {{CartService.WebApi_HostAddress}}/api/v1/carts/{{cartId}}/items
+Content-Type: application/json
+
+{
+		"id": 1,
+		"name": "Sample Item 1",
+		"price": 19.99,
+		"quantity": 2
+}
+
+###
+
+@cartId=b43ae66b-7189-4fd5-b6c3-5ea6c96927fc
+@itemId=1
+DELETE {{CartService.WebApi_HostAddress}}/api/v1/carts/{{cartId}}/items/{{itemId}}
+
+###
+
+@cartId=b43ae66b-7189-4fd5-b6c3-5ea6c96927fc
+GET {{CartService.WebApi_HostAddress}}/api/v1/carts/{{cartId}}
+
+###
+
+@cartId=b43ae66b-7189-4fd5-b6c3-5ea6c96927fc
+GET {{CartService.WebApi_HostAddress}}/api/v2/carts/{{cartId}}
+
+###
+
