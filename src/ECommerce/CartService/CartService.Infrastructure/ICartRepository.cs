@@ -2,8 +2,8 @@
 {
 	public interface ICartRepository
 	{
-		IEnumerable<CartItem>? GetCartItems(Guid cartId);
-		void AddCartItem(Guid cartId, CartItem item);
-		bool RemoveCartItem(Guid cartId, int itemId);
+		Task<IEnumerable<CartItem>?> GetCartItemsAsync(Guid cartId);
+		Task AddCartItemAsync(Guid cartId, CartItem item);
+		Task<bool> RemoveCartItemAsync(Guid cartId, int itemId);
 	}
 }

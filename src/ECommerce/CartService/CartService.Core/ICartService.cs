@@ -2,8 +2,8 @@
 {
 	public interface ICartService
 	{
-		IEnumerable<CartItemDto>? GetCartItems(Guid cartId);
-		void AddCartItem(Guid cartId, CartItemDto item);
-		bool RemoveCartItem(Guid cartId, int itemId);
+		Task<IEnumerable<CartItemDto>?> GetCartItemsAsync(Guid cartId);
+		Task AddCartItemAsync(Guid cartId, CartItemDto item);
+		Task<bool> RemoveCartItemAsync(Guid cartId, int itemId);
 	}
 }
