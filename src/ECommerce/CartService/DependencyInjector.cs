@@ -23,9 +23,7 @@ namespace CartService
 				return new CartRepository(client, databaseId, containerId);
 			});
 
-			builder.Services.AddTransient<ICartService, CartService.Core.CartService>();
-
-			builder.Services.AddLogging(builder => builder.AddConsole());
+			builder.Services.AddTransient<ICartService, Core.CartService>();
 
 			var loggerFactory = builder.Services.BuildServiceProvider().GetService<ILoggerFactory>();
 			var mapperConfiguration = new MapperConfiguration(cfg =>

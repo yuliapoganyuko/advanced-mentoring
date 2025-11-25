@@ -68,10 +68,25 @@ Content-Type: application/json
 
 {
 	"id": 2,
-	"name": "Updated Product 2",
+	"name": "Product 2",
 	"categoryId": 1,
 	"description": "This is a sample product.",
-	"price": 29.99,
+	"price": 25.99,
+	"amount": 2
+}
+
+###
+
+@id=1
+PUT {{CatalogService.WebApi_HostAddress}}/api/products/{{id}}
+Content-Type: application/json
+
+{
+	"id": 1,
+	"name": "Updated Product 1",
+	"categoryId": 1,
+	"description": "This is a sample product.",
+	"price": 30.99,
 	"amount": 2
 }
 

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CartService.CartService.Core.DTOs;
 using CartService.Infrastructure;
 
 namespace CartService.Core
@@ -31,6 +32,13 @@ namespace CartService.Core
 			if (cartItems is null)
 				return null;
 			return mapper.Map<IEnumerable<CartItemDto>>(cartItems);
+		}
+		
+		public async Task UpdateItemsOnProductChangedAsync(ProductChangedDto productChanged)
+		{
+			if (productChanged == null)
+				throw new ArgumentException(nameof(productChanged));
+			await cartRepository.UpdateItemsOnProductChangedAsync(productChanged.Id, productChanged.Name, productChanged.ImageUrl, productChanged.Price);
 		}
 
 		public async Task<bool> RemoveCartItemAsync(Guid cartId, int itemId)

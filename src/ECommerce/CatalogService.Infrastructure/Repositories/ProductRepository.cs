@@ -45,6 +45,15 @@ namespace CatalogService.Infrastructure.Repositories
 
 		public async Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
 		{
+			var local = context.Set<Product>()
+				.Local
+				.FirstOrDefault(e => e.Id == product.Id);
+	
+			if (local != null)
+			{
+				context.Entry(local).State = EntityState.Detached; // Detach the tracked entity
+			}
+
 			context.Products.Update(product);
 			await context.SaveChangesAsync(cancellationToken);
 		}

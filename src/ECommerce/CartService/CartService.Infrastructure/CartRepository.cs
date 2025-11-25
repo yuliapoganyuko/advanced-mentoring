@@ -66,6 +66,35 @@ namespace CartService.Infrastructure
 				return null;
 			}
 		}
+		
+		public async Task UpdateItemsOnProductChangedAsync(int productId, string productName, string? productImageUrl, decimal productPrice)
+		{
+			var iterator = container.GetItemQueryIterator<Cart>();
+			while (iterator.HasMoreResults)
+			{
+				foreach (var cart in await iterator.ReadNextAsync())
+				{
+					if (cart == null)
+						continue;
+
+					bool updated = false;
+					if (cart.Items != null)
+					{
+						foreach (var item in cart.Items.Where(i => i.Id == productId))
+						{
+							item.Name = productName;
+							item.ImageUri = productImageUrl;
+							item.Price = productPrice;
+							updated = true;
+						}
+					}
+					if (updated)
+					{
+						await container.ReplaceItemAsync(cart, cart.Id.ToString(), new PartitionKey(cart.Id.ToString()));
+					}
+				}
+			}
+		}
 
 		public async Task<bool> RemoveCartItemAsync(Guid cartId, int itemId)
 		{
