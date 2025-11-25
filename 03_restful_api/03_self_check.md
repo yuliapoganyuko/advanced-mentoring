@@ -147,10 +147,14 @@ Even though level 3 provides the complete REST benefits, sometimes it isn’t wo
 
 Pros of REST:
 
-* Simple due to being built on HTTP
+* Simple and familiar due to being built on HTTP
 * Supported by many tools
 * Easy caching, thus better performance
 * Requests are stateless, so it's easier to scale horizontally
+* Flexibility in Data Formats
+* Decoupling
+* REST encourages a clear separation between client and server, allowing each to evolve independently
+* In comparison to gRPC: While gRPC also enables decoupling, it is often more tightly integrated with specific service frameworks
 
 
 
@@ -159,6 +163,19 @@ Cons of REST:
 * Under- or over-fetching, which means that client cannot choose what fields to return
 * Often many requests need to be performed to get related data
 * When API is about commands and not resources, the resource-centric style can seem forced
+* In comparison to GraphQL: GraphQL allows clients to request only the data they need in a single query, making it more efficient for complex data requirements
+* Lack of Strict Standards
+* No Built-in Versioning
+* In comparison to gRPC: gRPC provides versioning support through Protocol Buffers
+* In comparison to SOAP: SOAP includes built-in versioning standards.
+
+
+
+In short:
+* REST is widely adopted, simple, and flexible, making it ideal for general-purpose web APIs with basic CRUD operations.
+* GraphQL is better for APIs with complex, client-specific queries.
+* gRPC is a great choice for high-performance, real-time communication.
+* SOAP remains useful in environments that require high security, strict standards, and legacy system compatibilit
 
 
 
