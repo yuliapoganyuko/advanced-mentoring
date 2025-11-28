@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -23,6 +23,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CartService\CartService.csproj" />
+    <ProjectReference Include="..\Messaging.Abstractions\Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\Messaging.Client\Messaging.Client.csproj" />
   </ItemGroup>
 
 </Project>

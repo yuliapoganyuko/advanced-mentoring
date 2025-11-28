@@ -2,6 +2,7 @@
 using CatalogService.Core;
 using CatalogService.Core.Interfaces;
 using CatalogService.Core.Services;
+using Messaging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,14 @@ namespace CatalogService.Infrastructure
 		public static void AddCoreServices(this IHostApplicationBuilder builder)
 		{
 			builder.Services.AddTransient<ICategoryService, CategoryService>();
-			builder.Services.AddTransient<IProductService, ProductService>();
+			builder.Services.AddTransient<IProductService, ProductService>(sp =>
+			{
+				var repository = sp.GetRequiredService<IProductRepository>();
+				var mapper = sp.GetRequiredService<IMapper>();
+				var messagePublisher = sp.GetRequiredService<IMessagePublisher>();
+				var queue = builder.Configuration["ServiceBus:Queue"] ?? throw new InvalidOperationException("Missing ServiceBus:Queue in configuration.");
+				return new ProductService(repository, mapper, messagePublisher, queue);
+			});
 
 			builder.Services.AddLogging(builder => builder.AddConsole());
 

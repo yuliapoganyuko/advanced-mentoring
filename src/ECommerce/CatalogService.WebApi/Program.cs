@@ -1,5 +1,6 @@
-using CatalogService.Core;
 using CatalogService.Infrastructure;
+using Messaging.Abstractions;
+using Messaging.Client;
 
 namespace CatalogService.WebApi
 {
@@ -15,6 +16,12 @@ namespace CatalogService.WebApi
 
 			builder.AddCoreServices();
 			builder.AddInfrastructureServices();
+			builder.Services.AddSingleton<IMessagePublisher, AzureServiceBusPublisher>(sp =>
+			{
+				var configuration = sp.GetRequiredService<IConfiguration>();
+				var connectionString = configuration.GetConnectionString("AzureServiceBusConnectionString") ?? throw new InvalidOperationException("Azure Service Bus connection string is not configured.");
+				return new AzureServiceBusPublisher(connectionString);
+			});
 
 			// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 			builder.Services.AddOpenApi();

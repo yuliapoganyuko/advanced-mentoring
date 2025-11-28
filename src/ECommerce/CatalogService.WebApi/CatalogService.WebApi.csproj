@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CatalogService.Application\CatalogService.Core.csproj" />
     <ProjectReference Include="..\CatalogService.Infrastructure\CatalogService.Infrastructure.csproj" />
+    <ProjectReference Include="..\Messaging.Client\Messaging.Client.csproj" />
   </ItemGroup>
 
 </Project>

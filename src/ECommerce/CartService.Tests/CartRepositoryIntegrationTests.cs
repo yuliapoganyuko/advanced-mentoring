@@ -1,185 +1,231 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using CartService.Infrastructure;
-using LiteDB;
+using Microsoft.Azure.Cosmos;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CartService.Tests
 {
 	[TestClass]
 	public sealed class CartRepositoryIntegrationTests
 	{
-		private CartRepository CreateRepository(ILiteDatabase db)
+		private CartRepository CreateRepository(CosmosClient client, string databaseId, string containerId)
 		{
-			return new CartRepository(db);
+			return new CartRepository(client, databaseId, containerId);
 		}
 
-		private string CreateTempDatabasePath() =>
-			Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
+		private string CreateDatabaseName() => "CartTestsDb_" + Guid.NewGuid().ToString("N");
+		private string CreateContainerName() => "Carts_" + Guid.NewGuid().ToString("N");
 
 		[TestMethod]
-		public void AddCartItem_PersistsItemToDatabase()
+		public async Task AddCartItem_PersistsItemToDatabase()
 		{
-			var dbPath = CreateTempDatabasePath();
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
 			try
 			{
-				using (var db = new LiteDatabase(dbPath))
-				{
-					var col = db.GetCollection<Cart>();
-					var cartId = Guid.NewGuid();
-					var cart = new Cart { Id = cartId, Items = new System.Collections.Generic.List<CartItem>() };
-					col.Insert(cart);
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/id"));
 
-					var repo = CreateRepository(db);
-					var item = new CartItem { Id = 100, Name = "IntegrationItem", Price = 9.99m, Quantity = 1 };
+				var container = client.GetContainer(databaseId, containerId);
 
-					repo.AddCartItem(cartId, item);
-				}
-
-				// Open a fresh DB instance to ensure persistence
-				using (var verifyDb = new LiteDatabase(dbPath))
-				{
-					var verifyCol = verifyDb.GetCollection<Cart>();
-					var stored = verifyCol.FindById(new BsonValue(Guid.Empty)); // default call to avoid overload ambiguity
-					// above line just to ensure BsonValue type available; we will fetch by Guid directly below
-
-					// Find the single cart we inserted
-					var cart = verifyCol.FindAll().FirstOrDefault();
-					Assert.IsNotNull(cart, "Cart should exist in the database after AddCartItem.");
-					Assert.IsTrue(cart.Items.Any(i => i.Id == 100 && i.Name == "IntegrationItem"),
-						"Added item should be persisted in the cart stored in DB.");
-				}
-			}
-			finally
-			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
-			}
-		}
-
-		[TestMethod]
-		public void GetCartItems_ReturnsItemsFromDatabase()
-		{
-			var dbPath = CreateTempDatabasePath();
-			try
-			{
 				var cartId = Guid.NewGuid();
-				using (var db = new LiteDatabase(dbPath))
-				{
-					var col = db.GetCollection<Cart>();
-					var items = new System.Collections.Generic.List<CartItem>
-					{
-						new CartItem { Id = 1, Name = "A", Price = 1m, Quantity = 1 },
-						new CartItem { Id = 2, Name = "B", Price = 2m, Quantity = 2 }
-					};
-					var cart = new Cart { Id = cartId, Items = items };
-					col.Insert(cart);
+				var cart = new Cart { Id = cartId, Items = new System.Collections.Generic.List<CartItem>() };
+				await container.CreateItemAsync(cart, new PartitionKey(cart.IdString));
 
-					var repo = CreateRepository(db);
-					var result = repo.GetCartItems(cartId)?.ToList();
-					
-					Assert.IsNotNull(result);
-					Assert.AreEqual(2, result.Count);
-					Assert.IsTrue(result.Any(i => i.Id == 1 && i.Name == "A"));
-					Assert.IsTrue(result.Any(i => i.Id == 2 && i.Name == "B"));
-				}
+				var repo = CreateRepository(client, databaseId, containerId);
+				var item = new CartItem { Id = 100, Name = "IntegrationItem", Price = 9.99m, Quantity = 1 };
+
+				await repo.AddCartItemAsync(cartId, item);
+
+				// Read back via query to ensure persistence
+				var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", cartId);
+				var iterator = container.GetItemQueryIterator<Cart>(query);
+				var feed = await iterator.ReadNextAsync();
+				var storedCart = feed.Resource.FirstOrDefault();
+
+				Assert.IsNotNull(storedCart, "Cart should exist in the database after AddCartItem.");
+				Assert.IsTrue(storedCart.Items.Any(i => i.Id == 100 && i.Name == "IntegrationItem"),
+					"Added item should be persisted in the cart stored in DB.");
 			}
 			finally
 			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
+				// cleanup database
+				await client.GetDatabase(databaseId).DeleteAsync();
 			}
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_RemovesItemFromDatabase()
+		public async Task GetCartItems_ReturnsItemsFromDatabase()
 		{
-			var dbPath = CreateTempDatabasePath();
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
 			try
 			{
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/id"));
+
+				var container = client.GetContainer(databaseId, containerId);
+
 				var cartId = Guid.NewGuid();
-				using (var db = new LiteDatabase(dbPath))
+				var items = new System.Collections.Generic.List<CartItem>
 				{
-					var col = db.GetCollection<Cart>();
-					var item = new CartItem { Id = 42, Name = "ToRemove", Price = 5m, Quantity = 1 };
-					var cart = new Cart { Id = cartId, Items = new System.Collections.Generic.List<CartItem> { item } };
-					col.Insert(cart);
+					new CartItem { Id = 1, Name = "A", Price = 1m, Quantity = 1 },
+					new CartItem { Id = 2, Name = "B", Price = 2m, Quantity = 2 }
+				};
+				var cart = new Cart { Id = cartId, Items = items };
+				await container.CreateItemAsync(cart, new PartitionKey(cartId.ToString()));
 
-					var repo = CreateRepository(db);
-					repo.RemoveCartItem(cartId, 42);
-				}
+				var repo = CreateRepository(client, databaseId, containerId);
+				var result = (await repo.GetCartItemsAsync(cartId))?.ToList();
 
-				using (var verifyDb = new LiteDatabase(dbPath))
-				{
-					var verifyCol = verifyDb.GetCollection<Cart>();
-					var storedCart = verifyCol.FindAll().FirstOrDefault();
-					Assert.IsNotNull(storedCart, "Cart should still exist after RemoveCartItem.");
-					Assert.IsFalse(storedCart.Items.Any(i => i.Id == 42), "Item should be removed and persisted.");
-				}
+				Assert.IsNotNull(result);
+				Assert.AreEqual(2, result.Count);
+				Assert.IsTrue(result.Any(i => i.Id == 1 && i.Name == "A"));
+				Assert.IsTrue(result.Any(i => i.Id == 2 && i.Name == "B"));
 			}
 			finally
 			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
+				await client.GetDatabase(databaseId).DeleteAsync();
 			}
 		}
 
 		[TestMethod]
-		public void AddCartItem_WhenCartDoesNotExist_CreatesCart()
+		public async Task RemoveCartItem_RemovesItemFromDatabase()
 		{
-			var dbPath = CreateTempDatabasePath();
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
 			try
 			{
-				var nonExistingCartId = Guid.NewGuid();
-				using (var db = new LiteDatabase(dbPath))
-				{
-					var repo = CreateRepository(db);
-					var item = new CartItem { Id = 11, Name = "NoCart", Price = 2m, Quantity = 1 };
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/id"));
 
-					repo.AddCartItem(nonExistingCartId, item);
+				var container = client.GetContainer(databaseId, containerId);
 
-					var col = db.GetCollection<Cart>();
-					Assert.IsTrue(col.FindById(nonExistingCartId) != null, "Cart should be created when AddCartItem is called for a missing cart.");
-				}
+				var cartId = Guid.NewGuid();
+				var item = new CartItem { Id = 42, Name = "ToRemove", Price = 5m, Quantity = 1 };
+				var cart = new Cart { Id = cartId, Items = new System.Collections.Generic.List<CartItem> { item } };
+				await container.CreateItemAsync(cart, new PartitionKey(cartId.ToString()));
+
+				var repo = CreateRepository(client, databaseId, containerId);
+				await repo.RemoveCartItemAsync(cartId, 42);
+
+				var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", cartId);
+				var iterator = container.GetItemQueryIterator<Cart>(query);
+				var feed = await iterator.ReadNextAsync();
+				var storedCart = feed.Resource.FirstOrDefault();
+
+				Assert.IsNotNull(storedCart, "Cart should still exist after RemoveCartItem.");
+				Assert.IsFalse(storedCart.Items.Any(i => i.Id == 42), "Item should be removed and persisted.");
 			}
 			finally
 			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
+				await client.GetDatabase(databaseId).DeleteAsync();
 			}
 		}
 
 		[TestMethod]
-		public void GetCartItems_WhenCartDoesNotExist_ReturnsNull()
+		public async Task AddCartItem_WhenCartDoesNotExist_CreatesCart()
 		{
-			var dbPath = CreateTempDatabasePath();
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
 			try
 			{
-				using (var db = new LiteDatabase(dbPath))
-				{
-					var repo = CreateRepository(db);
-					var items = repo.GetCartItems(Guid.NewGuid());
-					Assert.IsNull(items);
-				}
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/id"));
+
+				var cartId = Guid.NewGuid();
+				var repo = CreateRepository(client, databaseId, containerId);
+				var item = new CartItem { Id = 11, Name = "NoCart", Price = 2m, Quantity = 1 };
+
+				await repo.AddCartItemAsync(cartId, item);
+
+				var container = client.GetContainer(databaseId, containerId);
+				var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", cartId);
+				var iterator = container.GetItemQueryIterator<Cart>(query);
+				var feed = await iterator.ReadNextAsync();
+				var stored = feed.Resource.FirstOrDefault();
+
+				Assert.IsNotNull(stored, "Cart should be created when AddCartItem is called for a missing cart.");
 			}
 			finally
 			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
+				await client.GetDatabase(databaseId).DeleteAsync();
 			}
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_WhenCartDoesNotExist_NoOp()
+		public async Task GetCartItems_WhenCartDoesNotExist_ReturnsNull()
 		{
-			var dbPath = CreateTempDatabasePath();
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
 			try
 			{
-				using (var db = new LiteDatabase(dbPath))
-				{
-					var repo = CreateRepository(db);
-					repo.RemoveCartItem(Guid.NewGuid(), 1);
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/Id"));
 
-					var col = db.GetCollection<Cart>();
-					Assert.IsFalse(col.FindAll().Any(), "No cart should exist or be created when RemoveCartItem is called for a missing cart.");
-				}
+				var repo = CreateRepository(client, databaseId, containerId);
+				var items = await repo.GetCartItemsAsync(Guid.NewGuid());
+				Assert.IsNull(items);
 			}
 			finally
 			{
-				if (File.Exists(dbPath)) File.Delete(dbPath);
+				await client.GetDatabase(databaseId).DeleteAsync();
+			}
+		}
+
+		[TestMethod]
+		public async Task RemoveCartItem_WhenCartDoesNotExist_NoOp()
+		{
+			var connectionString = Environment.GetEnvironmentVariable("COSMOS_CONNECTION_STRING")
+				?? throw new InvalidOperationException("Set COSMOS_CONNECTION_STRING environment variable for integration tests.");
+			using var client = new CosmosClient(connectionString);
+
+			var databaseId = CreateDatabaseName();
+			var containerId = CreateContainerName();
+
+			try
+			{
+				await client.CreateDatabaseIfNotExistsAsync(databaseId);
+				await client.GetDatabase(databaseId).CreateContainerIfNotExistsAsync(new ContainerProperties(containerId, "/id"));
+
+				var repo = CreateRepository(client, databaseId, containerId);
+				await repo.RemoveCartItemAsync(Guid.NewGuid(), 1);
+
+				var container = client.GetContainer(databaseId, containerId);
+				var iterator = container.GetItemQueryIterator<Cart>(new QueryDefinition("SELECT * FROM c"));
+				var feed = await iterator.ReadNextAsync();
+				Assert.IsFalse(feed.Resource.Any(), "No cart should exist or be created when RemoveCartItem is called for a missing cart.");
+			}
+			finally
+			{
+				await client.GetDatabase(databaseId).DeleteAsync();
 			}
 		}
 	}

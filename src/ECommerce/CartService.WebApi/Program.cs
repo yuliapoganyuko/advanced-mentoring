@@ -1,5 +1,9 @@
 using Asp.Versioning;
+using AutoMapper;
+using CartService.WebApi.BackgroundServices;
 using CartService.WebApi.OpenApi;
+using Messaging.Abstractions;
+using Messaging.Client;
 
 namespace CartService.WebApi
 {
@@ -12,6 +16,7 @@ namespace CartService.WebApi
 			// Add services to the container.
 
 			builder.Services.AddControllers();
+			builder.Services.AddLogging(builder => builder.AddConsole());
 
 			builder.Services.AddApiVersioning(options =>
 			{
@@ -24,10 +29,24 @@ namespace CartService.WebApi
 					options.GroupNameFormat = "'v'V";
 					options.SubstituteApiVersionInUrl = true;
 					options.AssumeDefaultVersionWhenUnspecified = true;
-				}
-				);
+				});
 
 			builder.AddCartServices();
+
+			builder.Services.AddSingleton<IMessageListener, AzureServiceBusListener>(sp =>
+			{
+				var configuration = sp.GetRequiredService<IConfiguration>();
+				var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(AzureServiceBusListener));
+				var connectionString = configuration.GetConnectionString("AzureServiceBusConnectionString") ?? throw new InvalidOperationException("Azure Service Bus connection string is not configured.");
+				return new AzureServiceBusListener(connectionString, logger);
+			});
+
+			builder.Services.AddHostedService<AzureServiceBusListenerService>(sp =>
+			{
+				var listener = sp.GetRequiredService<IMessageListener>();
+				var queue = builder.Configuration["ServiceBus:Queue"] ?? throw new InvalidOperationException("Missing ServiceBus:Queue in configuration.");
+				return new AzureServiceBusListenerService(listener, sp, queue);
+			});
 
 			builder.Services.AddSwaggerGen();
 			builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();

@@ -23,6 +23,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.WebApi", "Ca
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatalogService.WebApi.Tests", "CatalogService.WebApi.Tests\CatalogService.WebApi.Tests.csproj", "{908C63C2-8FA2-41AC-8438-F404BBBBB27E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messaging.Client", "Messaging.Client\Messaging.Client.csproj", "{70B32E39-6995-40C6-9461-19AD07BB4E83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Messaging.Abstractions", "Messaging.Abstractions\Messaging.Abstractions.csproj", "{8308BD25-961C-4986-957D-3C75C7E077CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +73,14 @@ Global
 		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{908C63C2-8FA2-41AC-8438-F404BBBBB27E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70B32E39-6995-40C6-9461-19AD07BB4E83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70B32E39-6995-40C6-9461-19AD07BB4E83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70B32E39-6995-40C6-9461-19AD07BB4E83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70B32E39-6995-40C6-9461-19AD07BB4E83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8308BD25-961C-4986-957D-3C75C7E077CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8308BD25-961C-4986-957D-3C75C7E077CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8308BD25-961C-4986-957D-3C75C7E077CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8308BD25-961C-4986-957D-3C75C7E077CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

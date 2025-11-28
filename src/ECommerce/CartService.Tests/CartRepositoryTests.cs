@@ -1,6 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Net;
 using CartService.Infrastructure;
-using LiteDB;
+using Microsoft.Azure.Cosmos;
 using Moq;
 
 namespace CartService.Tests
@@ -9,58 +9,104 @@ namespace CartService.Tests
 	public sealed class CartRepositoryTests
 	{
 		private readonly Guid existingCartId = Guid.NewGuid();
-		private Mock<ILiteDatabase> dbMock = null!;
-		private Mock<ILiteCollection<Cart>> collectionMock = null!;
+		private Mock<CosmosClient> dbClientMock = null!;
+		private string dbId = "TestCartDb";
+		private string containerId = "Carts";
+		private Mock<Container> containerMock = null!;
 
 		[TestInitialize]
 		public void Setup()
 		{
-			dbMock = new Mock<ILiteDatabase>();
-			collectionMock = new Mock<ILiteCollection<Cart>>();
-			dbMock.Setup(d => d.GetCollection<Cart>()).Returns(collectionMock.Object);
+			dbClientMock = new Mock<CosmosClient>();
+			containerMock = new Mock<Container>();
+			dbClientMock.Setup(d => d.GetContainer(dbId, containerId)).Returns(containerMock.Object);
 		}
 
 		private CartRepository CreateRepository()
 		{
-			return new CartRepository(dbMock.Object);
+			return new CartRepository(dbClientMock.Object, dbId, containerId);
+		}
+
+		private static CosmosException CreateNotFoundCosmosException()
+		{
+			return new CosmosException("Not Found", HttpStatusCode.NotFound, 0, string.Empty, 0);
 		}
 
 		[TestMethod]
-		public void AddCartItem_WhenCartExists_AddsItem_UpdatesAndCommits()
+		public async Task AddCartItemAsync_WhenCartExists_AddsItem_Replaces()
 		{
 			// Arrange
 			var cart = new Cart { Id = existingCartId, Items = new List<CartItem>() };
-			collectionMock.Setup(c => c.FindById(existingCartId)).Returns(cart);
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					existingCartId.ToString(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>(r => r.Resource == cart));
+
+			containerMock
+				.Setup(c => c.ReplaceItemAsync(
+					It.IsAny<Cart>(),
+					It.IsAny<string>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>());
 
 			var repo = CreateRepository();
 			var item = new CartItem { Id = 10, Name = "New", Price = 1m, Quantity = 1 };
 
 			// Act
-			repo.AddCartItem(existingCartId, item);
+			await repo.AddCartItemAsync(existingCartId, item);
 
 			// Assert
-			collectionMock.Verify(c => c.Update(It.Is<Cart>(ct => ct.Items.Contains(item))), Times.Once());
-			dbMock.Verify(d => d.Commit(), Times.Once());
+			containerMock.Verify(c => c.ReplaceItemAsync(
+				It.Is<Cart>(ct => ct.Items.Contains(item)),
+				existingCartId.ToString(),
+				It.IsAny<PartitionKey>(),
+				null,
+				It.IsAny<CancellationToken>()), Times.Once());
+
 			Assert.IsTrue(cart.Items.Contains(item));
 		}
 
 		[TestMethod]
-		public void AddCartItem_WhenCartDoesNotExist_Commits()
+		public async Task AddCartItemAsync_WhenCartDoesNotExist_CreatesNewCart()
 		{
-			// Arrange
-			collectionMock.Setup(c => c.FindById(It.IsAny<BsonValue>())).Returns((Cart?)null);
+			// Arrange - simulate ReadItemAsync throwing 404 (cart not found)
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					It.IsAny<string>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ThrowsAsync(CreateNotFoundCosmosException());
+
+			containerMock
+				.Setup(c => c.CreateItemAsync(
+					It.IsAny<Cart>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>());
+
 			var repo = CreateRepository();
 			var item = new CartItem { Id = 11, Name = "DoesNotMatter", Price = 2m, Quantity = 1 };
 
 			// Act
-			repo.AddCartItem(Guid.NewGuid(), item);
+			await repo.AddCartItemAsync(Guid.NewGuid(), item);
 
 			// Assert
-			dbMock.Verify(d => d.Commit(), Times.Once());
+			containerMock.Verify(c => c.CreateItemAsync(
+				It.Is<Cart>(ct => ct.Items.Contains(item)),
+				It.IsAny<PartitionKey>(),
+				null,
+				It.IsAny<CancellationToken>()), Times.Once());
 		}
 
 		[TestMethod]
-		public void GetCartItems_WhenCartExists_ReturnsItems()
+		public async Task GetCartItemsAsync_WhenCartExists_ReturnsItems()
 		{
 			// Arrange
 			var items = new List<CartItem>
@@ -69,84 +115,139 @@ namespace CartService.Tests
 				new CartItem { Id = 2, Name = "B", Price = 20m, Quantity = 2 }
 			};
 			var cart = new Cart { Id = existingCartId, Items = items };
-			collectionMock.Setup(c => c.FindById(existingCartId)).Returns(cart);
+
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					existingCartId.ToString(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>(r => r.Resource == cart));
 
 			var repo = CreateRepository();
 
 			// Act
-			var result = repo.GetCartItems(existingCartId).ToList();
+			var result = (await repo.GetCartItemsAsync(existingCartId))!.ToList();
 
 			// Assert
 			CollectionAssert.AreEqual(items, result);
 		}
 
 		[TestMethod]
-		public void GetCartItems_WhenCartDoesNotExist_ReturnsNull()
+		public async Task GetCartItemsAsync_WhenCartDoesNotExist_ReturnsNull()
 		{
-			// Arrange
-			collectionMock.Setup(c => c.FindById(It.IsAny<BsonValue>())).Returns((Cart?)null);
+			// Arrange - simulate not found
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					It.IsAny<string>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ThrowsAsync(CreateNotFoundCosmosException());
+
 			var repo = CreateRepository();
 
 			// Act
-			var result = repo.GetCartItems(Guid.NewGuid());
+			var result = await repo.GetCartItemsAsync(Guid.NewGuid());
 
 			// Assert
 			Assert.IsNull(result);
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_WhenItemExists_RemovesItem_UpdatesAndCommits()
+		public async Task RemoveCartItemAsync_WhenItemExists_ReplacesAndReturnsTrue()
 		{
 			// Arrange
 			var item = new CartItem { Id = 42, Name = "ToRemove", Price = 5m, Quantity = 1 };
 			var cart = new Cart { Id = existingCartId, Items = new List<CartItem> { item } };
-			collectionMock.Setup(c => c.FindById(existingCartId)).Returns(cart);
-			dbMock.Setup(d => d.Commit()).Returns(true);
+
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					existingCartId.ToString(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>(r => r.Resource == cart));
+
+			containerMock
+				.Setup(c => c.ReplaceItemAsync(
+					It.IsAny<Cart>(),
+					It.IsAny<string>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>(r => r.StatusCode == HttpStatusCode.OK));
 
 			var repo = CreateRepository();
 
 			// Act
-			bool result = repo.RemoveCartItem(existingCartId, item.Id);
+			bool result = await repo.RemoveCartItemAsync(existingCartId, item.Id);
 
 			// Assert
 			Assert.IsTrue(result);
-			collectionMock.Verify(c => c.Update(It.Is<Cart>(ct => ct.Items.All(i => i.Id != item.Id))), Times.Once());
-			dbMock.Verify(d => d.Commit(), Times.Once());
+			containerMock.Verify(c => c.ReplaceItemAsync(
+				It.Is<Cart>(ct => ct.Items.All(i => i.Id != item.Id)),
+				existingCartId.ToString(),
+				It.IsAny<PartitionKey>(),
+				null,
+				It.IsAny<CancellationToken>()), Times.Once());
 			Assert.IsFalse(cart.Items.Any(i => i.Id == item.Id));
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_WhenItemDoesNotExist_DoesNotUpdateOrCommit()
+		public async Task RemoveCartItemAsync_WhenItemDoesNotExist_DoesNotReplaceAndReturnsFalse()
 		{
 			// Arrange
 			var cart = new Cart { Id = existingCartId, Items = new List<CartItem>() };
-			collectionMock.Setup(c => c.FindById(existingCartId)).Returns(cart);
+
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					existingCartId.ToString(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ReturnsAsync(Mock.Of<ItemResponse<Cart>>(r => r.Resource == cart));
 
 			var repo = CreateRepository();
 
 			// Act
-			bool result =repo.RemoveCartItem(existingCartId, 999);
+			bool result = await repo.RemoveCartItemAsync(existingCartId, 999);
 
 			// Assert
 			Assert.IsFalse(result);
-			collectionMock.Verify(c => c.Update(It.IsAny<Cart>()), Times.Never());
-			dbMock.Verify(d => d.Commit(), Times.Never());
+			containerMock.Verify(c => c.ReplaceItemAsync(
+				It.IsAny<Cart>(),
+				It.IsAny<string>(),
+				It.IsAny<PartitionKey>(),
+				null,
+				It.IsAny<CancellationToken>()), Times.Never());
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_WhenCartDoesNotExist_DoesNotUpdateOrCommit()
+		public async Task RemoveCartItemAsync_WhenCartDoesNotExist_ReturnsFalse()
 		{
-			// Arrange
-			collectionMock.Setup(c => c.FindById(It.IsAny<BsonValue>())).Returns((Cart?)null);
+			// Arrange - simulate not found
+			containerMock
+				.Setup(c => c.ReadItemAsync<Cart>(
+					It.IsAny<string>(),
+					It.IsAny<PartitionKey>(),
+					null,
+					It.IsAny<CancellationToken>()))
+				.ThrowsAsync(CreateNotFoundCosmosException());
+
 			var repo = CreateRepository();
 
 			// Act
-			bool result = repo.RemoveCartItem(Guid.NewGuid(), 1);
+			bool result = await repo.RemoveCartItemAsync(Guid.NewGuid(), 1);
 
 			// Assert
 			Assert.IsFalse(result);
-			collectionMock.Verify(c => c.Update(It.IsAny<Cart>()), Times.Never());
-			dbMock.Verify(d => d.Commit(), Times.Never());
+			containerMock.Verify(c => c.ReplaceItemAsync(
+				It.IsAny<Cart>(),
+				It.IsAny<string>(),
+				It.IsAny<PartitionKey>(),
+				null,
+				It.IsAny<CancellationToken>()), Times.Never());
 		}
 	}
 }

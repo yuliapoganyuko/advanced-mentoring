@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CatalogService.Core.Interfaces;
 using CatalogService.Core.Services;
+using Messaging.Abstractions;
 using Moq;
 
 namespace CatalogService.Core.Tests
@@ -10,14 +11,17 @@ namespace CatalogService.Core.Tests
 	{
 		private Mock<IProductRepository> repositoryMock = null!;
 		private Mock<IMapper> mapperMock = null!;
+		private Mock<IMessagePublisher> messagePublisherMock = null!;
+		private const string queueName = "test-ecommerce";
 		private ProductService productService = null!;
 
 		[TestInitialize]
 		public void TestInitialize()
 		{
-			repositoryMock = new Mock<IProductRepository>(MockBehavior.Strict);
-			mapperMock = new Mock<IMapper>(MockBehavior.Strict);
-			productService = new ProductService(repositoryMock.Object, mapperMock.Object);
+			repositoryMock = new Mock<IProductRepository>();
+			mapperMock = new Mock<IMapper>();
+			messagePublisherMock = new Mock<IMessagePublisher>();
+			productService = new ProductService(repositoryMock.Object, mapperMock.Object, messagePublisherMock.Object, queueName);
 		}
 
 		[TestCleanup]
@@ -25,6 +29,7 @@ namespace CatalogService.Core.Tests
 		{
 			repositoryMock.VerifyAll();
 			mapperMock.VerifyAll();
+			messagePublisherMock.VerifyAll();
 		}
 
 		[TestMethod]
