@@ -100,3 +100,79 @@ A queue is used for point-to-point communication where each message is delivered
 
 Saga pattern is used for managing distributed transactions across multiple distributed services through messaging. Instead of a single ACID transaction, the operation is broken down into multiple local transactions. In case of failure, affected components are notified through messaging so that the applied changes can be compensated or undone, enabling eventual consistency.
 
+
+
+A design pattern, used in microservices. In distributed systems we have more data sources (databases) involved for a single operations, so it is not possible to address all the changes with a single ACID transaction. This pattern's purpose is to manage data consistency in a distributed system. It does not require long-running blocking database connections.
+
+
+
+The pattern introduces the concept of "Compensating Transactions", which supports undoing/rollback changes - do vs undo.
+
+
+
+Example:
+
+
+
+book a flight - success -> proceed
+
+book a hotel - fail -> Compensating Transaction
+
+cancel flight
+
+(Should the "cancel flight" step fail due to any reasons, we must make sure that a human is aware and can intervene)
+
+
+
+Implementation styles:
+
+
+
+Choreography
+
+no centralized logic
+
+each participant (service) knows its role and what to do
+
+Pros
+
+
+
+simple
+
+loosely coupled
+
+team authority/ownership - the owner of the service can/should define the do/undo steps
+
+Cons
+
+
+
+difficult to have a view on the whole flow (as that is scattered across the services)
+
+error-prone
+
+Orchestration
+
+has a central orchestrator
+
+usually a service with a state machine
+
+Pros
+
+
+
+having a view and control over the whole flow
+
+simpler to handle complex scenarios
+
+simpler to apply cross-cutting concerns
+
+Cons
+
+
+
+new, dedicated component is required
+
+either all the service owners should contribute to it, or someone who knows all the services
+
