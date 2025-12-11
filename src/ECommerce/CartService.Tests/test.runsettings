@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <COSMOS_CONNECTION_STRING></COSMOS_CONNECTION_STRING>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

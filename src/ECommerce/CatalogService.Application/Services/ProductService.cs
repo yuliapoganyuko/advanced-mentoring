@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using CatalogService.Core.DTOs;
 using CatalogService.Core.Interfaces;
+using Messaging.Abstractions;
 
 namespace CatalogService.Core.Services
 {
@@ -7,11 +9,15 @@ namespace CatalogService.Core.Services
 	{
 		IProductRepository productRepository;
 		IMapper mapper;
+		IMessagePublisher messagePublisher;
+		private readonly string queue;
 
-		public ProductService(IProductRepository productRepository, IMapper mapper)
+		public ProductService(IProductRepository productRepository, IMapper mapper, IMessagePublisher messagePublisher, string queue)
 		{
 			this.productRepository = productRepository;
+			this.messagePublisher = messagePublisher;
 			this.mapper = mapper;
+			this.queue = queue;
 		}
 
 		public async Task<ProductDto?> AddAsync(ProductDto product, CancellationToken cancellationToken = default)
@@ -50,7 +56,22 @@ namespace CatalogService.Core.Services
 		{
 			if (product == null)
 				throw new ArgumentNullException(nameof(product));
+
+			var existing = await productRepository.GetAsync(product.Id, cancellationToken);
 			await productRepository.UpdateAsync(mapper.Map<Product>(product), cancellationToken);
+
+			if (existing != null && 
+				(existing.Price != product.Price || existing.Name != product.Name || existing.Image != product.Image))
+			{
+				var productChanged = new ProductChangedDto
+				{
+					Id = product.Id,
+					Name = product.Name,
+					ImageUrl = product.Image,
+					Price = product.Price
+				};
+				await messagePublisher.PublishAsync(queue, productChanged);
+			}
 		}
 	}
 }

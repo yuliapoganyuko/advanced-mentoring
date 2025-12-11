@@ -57,7 +57,7 @@ namespace CartService.WebApi.Tests
 				new CartItemDto { Id = 1, Name = "A", Price = 1m, Quantity = 1 },
 				new CartItemDto { Id = 2, Name = "B", Price = 2m, Quantity = 2 }
 			};
-			factory!.CartServiceMock.Setup(s => s.GetCartItems(id)).Returns(items);
+			factory!.CartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync(items);
 
 			// Act
 			var resp = await client!.GetAsync($"/api/v1/Carts/{id}");
@@ -79,7 +79,7 @@ namespace CartService.WebApi.Tests
 				Assert.AreEqual(expected.Price, actual.Price, $"Item[{i}].Price mismatch");
 				Assert.AreEqual(expected.Quantity, actual.Quantity, $"Item[{i}].Quantity mismatch");
 			}
-			factory.CartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			factory.CartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
@@ -87,7 +87,7 @@ namespace CartService.WebApi.Tests
 		{
 			// Arrange
 			var id = Guid.NewGuid();
-			factory!.CartServiceMock.Setup(s => s.GetCartItems(id)).Returns((IEnumerable<CartItemDto>?)null);
+			factory!.CartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync((IEnumerable<CartItemDto>?)null);
 
 			// Act
 			var resp = await client!.GetAsync($"/api/v1/Carts/{id}");
@@ -100,7 +100,7 @@ namespace CartService.WebApi.Tests
 			Assert.AreEqual(id, cart!.Id);
 			Assert.IsNotNull(cart.Items);
 			Assert.AreEqual(0, cart.Items.Count);
-			factory.CartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			factory.CartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
@@ -126,14 +126,14 @@ namespace CartService.WebApi.Tests
 			{
 				new CartItemDto { Id = 3, Name = "X", Price = 10m, Quantity = 1 }
 			};
-			factory!.CartServiceMock.Setup(s => s.GetCartItems(id)).Returns(items);
+			factory!.CartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync(items);
 
 			// Act
 			var resp = await client!.GetAsync($"/api/v2/Carts/{id}");
 
 			// Assert
 			Assert.AreEqual(HttpStatusCode.OK, resp.StatusCode);
-			factory.CartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			factory.CartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
@@ -166,7 +166,7 @@ namespace CartService.WebApi.Tests
 
 			// Assert
 			Assert.AreEqual(HttpStatusCode.OK, resp.StatusCode);
-			factory!.CartServiceMock.Verify(s => s.AddCartItem(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)), Times.Once);
+			factory!.CartServiceMock.Verify(s => s.AddCartItemAsync(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)), Times.Once);
 		}
 
 		[TestMethod]
@@ -185,7 +185,7 @@ namespace CartService.WebApi.Tests
 			// Arrange
 			var id = Guid.NewGuid();
 			var itemId = 21;
-			factory!.CartServiceMock.Setup(s => s.RemoveCartItem(id, itemId)).Returns(true);
+			factory!.CartServiceMock.Setup(s => s.RemoveCartItemAsync(id, itemId)).ReturnsAsync(true);
 
 			// Act
 			var resp = await client!.DeleteAsync($"/api/v2/Carts/{id}/items/{itemId}");
@@ -195,7 +195,7 @@ namespace CartService.WebApi.Tests
 			var content = await resp.Content.ReadAsStringAsync();
 			var value = JsonSerializer.Deserialize<bool>(content, jsonOptions);
 			Assert.IsTrue(value);
-			factory.CartServiceMock.Verify(s => s.RemoveCartItem(id, itemId), Times.Once);
+			factory.CartServiceMock.Verify(s => s.RemoveCartItemAsync(id, itemId), Times.Once);
 		}
 
 		/// <summary>

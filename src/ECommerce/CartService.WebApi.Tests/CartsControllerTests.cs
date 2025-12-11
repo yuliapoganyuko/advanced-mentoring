@@ -14,15 +14,15 @@ namespace CartService.WebApi.Tests
 		[TestInitialize]
 		public void Init()
 		{
-			cartServiceMock = new Mock<ICartService>(MockBehavior.Strict);
+			cartServiceMock = new Mock<ICartService>();
 			controller = new CartsController(cartServiceMock.Object);
 		}
 
 		[TestMethod]
-		public void Get_ReturnsBadRequest_WhenCartIdIsInvalid()
+		public async Task Get_ReturnsBadRequest_WhenCartIdIsInvalid()
 		{
 			// Act
-			var result = controller.Get("not-a-guid");
+			var result = await controller.Get("not-a-guid");
 
 			// Assert
 			Assert.IsNotNull(result.Result);
@@ -31,7 +31,7 @@ namespace CartService.WebApi.Tests
 		}
 
 		[TestMethod]
-		public void Get_ReturnsOk_WithCartDto_WhenServiceReturnsItems()
+		public async Task Get_ReturnsOk_WithCartDto_WhenServiceReturnsItems()
 		{
 			// Arrange
 			var id = Guid.NewGuid();
@@ -40,10 +40,10 @@ namespace CartService.WebApi.Tests
 				new CartItemDto { Id = 1, Name = "A", Price = 1m, Quantity = 1 },
 				new CartItemDto { Id = 2, Name = "B", Price = 2m, Quantity = 2 }
 			};
-			cartServiceMock.Setup(s => s.GetCartItems(id)).Returns(items);
+			cartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync(items);
 
 			// Act
-			var action = controller.Get(id.ToString());
+			var action = await controller.Get(id.ToString());
 
 			// Assert
 			var ok = action.Result as OkObjectResult;
@@ -52,18 +52,18 @@ namespace CartService.WebApi.Tests
 			Assert.IsNotNull(cart);
 			Assert.AreEqual(id, cart!.Id);
 			CollectionAssert.AreEqual(items.ToList(), cart.Items.ToList());
-			cartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			cartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
-		public void Get_ReturnsOk_WithEmptyItems_WhenServiceReturnsNull()
+		public async Task Get_ReturnsOk_WithEmptyItems_WhenServiceReturnsNull()
 		{
 			// Arrange
 			var id = Guid.NewGuid();
-			cartServiceMock.Setup(s => s.GetCartItems(id)).Returns((IEnumerable<CartItemDto>?)null);
+			cartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync((IEnumerable<CartItemDto>?)null);
 
 			// Act
-			var action = controller.Get(id.ToString());
+			var action = await controller.Get(id.ToString());
 
 			// Assert
 			var ok = action.Result as OkObjectResult;
@@ -73,14 +73,14 @@ namespace CartService.WebApi.Tests
 			Assert.AreEqual(id, cart!.Id);
 			Assert.IsNotNull(cart.Items);
 			Assert.AreEqual(0, cart.Items.Count);
-			cartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			cartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
-		public void GetV2_ReturnsBadRequest_WhenCartIdIsInvalid()
+		public async Task GetV2_ReturnsBadRequest_WhenCartIdIsInvalid()
 		{
 			// Act
-			var result = controller.GetV2(string.Empty);
+			var result = await controller.GetV2(string.Empty);
 
 			// Assert
 			Assert.IsNotNull(result.Result);
@@ -89,7 +89,7 @@ namespace CartService.WebApi.Tests
 		}
 
 		[TestMethod]
-		public void GetV2_ReturnsOk_WithItems_WhenServiceReturnsItems()
+		public async Task GetV2_ReturnsOk_WithItems_WhenServiceReturnsItems()
 		{
 			// Arrange
 			var id = Guid.NewGuid();
@@ -97,10 +97,10 @@ namespace CartService.WebApi.Tests
 			{
 				new CartItemDto { Id = 3, Name = "X", Price = 10m, Quantity = 1 }
 			};
-			cartServiceMock.Setup(s => s.GetCartItems(id)).Returns(items);
+			cartServiceMock.Setup(s => s.GetCartItemsAsync(id)).ReturnsAsync(items);
 
 			// Act
-			var action = controller.GetV2(id.ToString());
+			var action = await controller.GetV2(id.ToString());
 
 			// Assert
 			var ok = action.Result as OkObjectResult;
@@ -108,11 +108,11 @@ namespace CartService.WebApi.Tests
 			var returned = ok!.Value as IEnumerable<CartItemDto>;
 			Assert.IsNotNull(returned);
 			CollectionAssert.AreEqual(items.ToList(), returned!.ToList());
-			cartServiceMock.Verify(s => s.GetCartItems(id), Times.Once);
+			cartServiceMock.Verify(s => s.GetCartItemsAsync(id), Times.Once);
 		}
 
 		[TestMethod]
-		public void Post_ReturnsBadRequest_WhenItemIsInvalid()
+		public async Task Post_ReturnsBadRequest_WhenItemIsInvalid()
 		{
 			// Arrange
 			var id = Guid.NewGuid().ToString();
@@ -125,7 +125,7 @@ namespace CartService.WebApi.Tests
 			};
 
 			// Act
-			var result = controller.Post(id, invalidItem);
+			var result = await controller.Post(id, invalidItem);
 
 			// Assert
 			var badReq = result as BadRequestResult;
@@ -133,7 +133,7 @@ namespace CartService.WebApi.Tests
 		}
 
 		[TestMethod]
-		public void Post_ReturnsBadRequest_WhenCartIdIsInvalid()
+		public async Task Post_ReturnsBadRequest_WhenCartIdIsInvalid()
 		{
 			// Arrange
 			var invalidCartId = "bad-guid";
@@ -146,7 +146,7 @@ namespace CartService.WebApi.Tests
 			};
 
 			// Act
-			var result = controller.Post(invalidCartId, item);
+			var result = await controller.Post(invalidCartId, item);
 
 			// Assert
 			var badReq = result as BadRequestResult;
@@ -154,7 +154,7 @@ namespace CartService.WebApi.Tests
 		}
 
 		[TestMethod]
-		public void Post_CallsServiceAndReturnsOk_WhenInputIsValid()
+		public async Task Post_CallsServiceAndReturnsOk_WhenInputIsValid()
 		{
 			// Arrange
 			var id = Guid.NewGuid();
@@ -165,21 +165,21 @@ namespace CartService.WebApi.Tests
 				Price = 9.99m,
 				Quantity = 2
 			};
-			cartServiceMock.Setup(s => s.AddCartItem(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)));
+			cartServiceMock.Setup(s => s.AddCartItemAsync(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)));
 
 			// Act
-			var result = controller.Post(id.ToString(), item);
+			var result = await controller.Post(id.ToString(), item);
 
 			// Assert
 			Assert.IsInstanceOfType(result, typeof(OkResult));
-			cartServiceMock.Verify(s => s.AddCartItem(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)), Times.Once);
+			cartServiceMock.Verify(s => s.AddCartItemAsync(id, It.Is<CartItemDto>(ci => ci.Id == item.Id && ci.Name == item.Name)), Times.Once);
 		}
 
 		[TestMethod]
-		public void Delete_ReturnsBadRequest_WhenCartIdInvalid()
+		public async Task Delete_ReturnsBadRequest_WhenCartIdInvalid()
 		{
 			// Act
-			var result = controller.Delete("", 1);
+			var result = await controller.Delete("", 1);
 
 			// Assert
 			var badReq = result as BadRequestResult;
@@ -187,21 +187,21 @@ namespace CartService.WebApi.Tests
 		}
 
 		[TestMethod]
-		public void Delete_ReturnsOk_WithServiceResult_WhenValid()
+		public async Task Delete_ReturnsOk_WithServiceResult_WhenValid()
 		{
 			// Arrange
 			var id = Guid.NewGuid();
 			var itemId = 21;
-			cartServiceMock.Setup(s => s.RemoveCartItem(id, itemId)).Returns(true);
+			cartServiceMock.Setup(s => s.RemoveCartItemAsync(id, itemId)).ReturnsAsync(true);
 
 			// Act
-			var action = controller.Delete(id.ToString(), itemId);
+			var action = await controller.Delete(id.ToString(), itemId);
 
 			// Assert
 			var ok = action as OkObjectResult;
 			Assert.IsNotNull(ok);
 			Assert.AreEqual(true, ok!.Value);
-			cartServiceMock.Verify(s => s.RemoveCartItem(id, itemId), Times.Once);
+			cartServiceMock.Verify(s => s.RemoveCartItemAsync(id, itemId), Times.Once);
 		}
 	}
 }

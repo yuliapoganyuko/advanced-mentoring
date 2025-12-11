@@ -27,7 +27,7 @@ namespace CartService.WebApi.Controllers
 		[HttpGet("{cartId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public ActionResult<IEnumerable<CartItemDto>?> Get(string cartId)
+		public async Task<ActionResult<IEnumerable<CartItemDto>?>> Get(string cartId)
 		{
 			Guid guid;
 			if (string.IsNullOrEmpty(cartId) || !Guid.TryParse(cartId, out guid))
@@ -35,7 +35,7 @@ namespace CartService.WebApi.Controllers
 				return BadRequest();
 			}
 
-			var cartItems = cartService.GetCartItems(guid);
+			var cartItems = await cartService.GetCartItemsAsync(guid);
 			CartDto cart = new CartDto
 			{
 				Id = guid,
@@ -55,7 +55,7 @@ namespace CartService.WebApi.Controllers
 		[HttpGet("{cartId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public ActionResult<IEnumerable<CartItemDto>?> GetV2(string cartId)
+		public async Task<ActionResult<IEnumerable<CartItemDto>?>> GetV2(string cartId)
 		{
 			Guid guid;
 			if (string.IsNullOrEmpty(cartId) || !Guid.TryParse(cartId, out guid))
@@ -63,7 +63,7 @@ namespace CartService.WebApi.Controllers
 				return BadRequest();
 			}
 
-			return Ok(cartService.GetCartItems(guid));
+			return Ok(await cartService.GetCartItemsAsync(guid));
 		}
 
 		/// <summary>
@@ -91,7 +91,7 @@ namespace CartService.WebApi.Controllers
 		[MapToApiVersion("2")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public IActionResult Post(string cartId, [FromBody] CartItemDto item)
+		public async Task<IActionResult> Post(string cartId, [FromBody] CartItemDto item)
 		{
 			if (item == null ||
 				item.Id < 0 ||
@@ -108,7 +108,7 @@ namespace CartService.WebApi.Controllers
 				return BadRequest();
 			}
 
-			cartService.AddCartItem(guid, item);
+			await cartService.AddCartItemAsync(guid, item);
 
 			return Ok();
 		}
@@ -126,7 +126,7 @@ namespace CartService.WebApi.Controllers
 		[MapToApiVersion("2")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public IActionResult Delete(string cartId, int itemId)
+		public async Task<IActionResult> Delete(string cartId, int itemId)
 		{
 			Guid guid;
 			if (string.IsNullOrEmpty(cartId) || !Guid.TryParse(cartId, out guid))
@@ -134,7 +134,7 @@ namespace CartService.WebApi.Controllers
 				return BadRequest();
 			}
 
-			return Ok(cartService.RemoveCartItem(guid, itemId));
+			return Ok(await cartService.RemoveCartItemAsync(guid, itemId));
 		}
 	}
 }

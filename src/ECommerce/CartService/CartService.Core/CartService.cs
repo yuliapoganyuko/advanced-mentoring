@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CartService.CartService.Core.DTOs;
 using CartService.Infrastructure;
 
 namespace CartService.Core
@@ -14,33 +15,39 @@ namespace CartService.Core
 			this.mapper = mapper;
 		}
 
-		public void AddCartItem(Guid cartId, CartItemDto item)
+		public async Task AddCartItemAsync(Guid cartId, CartItemDto item)
 		{
 			if (cartId == Guid.Empty)
 				throw new ArgumentException(nameof(cartId));
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
-			cartRepository.AddCartItem(cartId, mapper.Map<CartItem>(item));
-			return;
+			await cartRepository.AddCartItemAsync(cartId, mapper.Map<CartItem>(item));
 		}
 
-		public IEnumerable<CartItemDto>? GetCartItems(Guid cartId)
+		public async Task<IEnumerable<CartItemDto>?> GetCartItemsAsync(Guid cartId)
 		{
 			if (cartId == Guid.Empty)
 				throw new ArgumentException(nameof(cartId));
-			IEnumerable<CartItem>? cartItems = cartRepository.GetCartItems(cartId);
+			IEnumerable<CartItem>? cartItems = await cartRepository.GetCartItemsAsync(cartId);
 			if (cartItems is null)
 				return null;
 			return mapper.Map<IEnumerable<CartItemDto>>(cartItems);
 		}
+		
+		public async Task UpdateItemsOnProductChangedAsync(ProductChangedDto productChanged)
+		{
+			if (productChanged == null)
+				throw new ArgumentException(nameof(productChanged));
+			await cartRepository.UpdateItemsOnProductChangedAsync(productChanged.Id, productChanged.Name, productChanged.ImageUrl, productChanged.Price);
+		}
 
-		public bool RemoveCartItem(Guid cartId, int itemId)
+		public async Task<bool> RemoveCartItemAsync(Guid cartId, int itemId)
 		{
 			if (cartId == Guid.Empty)
 				throw new ArgumentException(nameof(cartId));
 			if (itemId <= 0)
 				throw new ArgumentOutOfRangeException(nameof(itemId));
-			return cartRepository.RemoveCartItem(cartId, itemId);
+			return await cartRepository.RemoveCartItemAsync(cartId, itemId);
 		}
 	}
 }

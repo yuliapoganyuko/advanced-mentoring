@@ -33,7 +33,7 @@ namespace CartService.Tests
 		}
 
 		[TestMethod]
-		public void AddCartItem_AddsItem_WhenItemIsValid()
+		public async Task AddCartItem_AddsItem_WhenItemIsValid()
 		{
 			// Arrange
 			mapperMock.Setup(m => m.Map<CartItem>(It.IsAny<CartItemDto>()))
@@ -48,11 +48,11 @@ namespace CartService.Tests
 				});
 
 			// Act
-			cartService.AddCartItem(cartId, cartItem);
+			await cartService.AddCartItemAsync(cartId, cartItem);
 
 			// Assert
 			mapperMock.Verify(m => m.Map<CartItem>(cartItem), Times.Once());
-			cartRepositoryMock.Verify(m => m.AddCartItem(cartId, It.Is<CartItem>(ci => ci.Id == cartItem.Id && ci.Name == cartItem.Name)), Times.Once());
+			cartRepositoryMock.Verify(m => m.AddCartItemAsync(cartId, It.Is<CartItem>(ci => ci.Id == cartItem.Id && ci.Name == cartItem.Name)), Times.Once());
 		}
 
 		[TestMethod]
@@ -62,7 +62,7 @@ namespace CartService.Tests
 			var emptyId = Guid.Empty;
 
 			// Act & Assert
-			Assert.ThrowsException<ArgumentException>(() => cartService.AddCartItem(emptyId, cartItem));
+			Assert.ThrowsExceptionAsync<ArgumentException>(() => cartService.AddCartItemAsync(emptyId, cartItem));
 		}
 
 		[TestMethod]
@@ -72,11 +72,11 @@ namespace CartService.Tests
 			CartItemDto nullItem = null!;
 
 			// Act & Assert
-			Assert.ThrowsException<ArgumentNullException>(() => cartService.AddCartItem(cartId, nullItem));
+			Assert.ThrowsExceptionAsync<ArgumentNullException>(() => cartService.AddCartItemAsync(cartId, nullItem));
 		}
 
 		[TestMethod]
-		public void GetCartItems_ReturnsMappedItems_WhenCartIdValid()
+		public async Task GetCartItems_ReturnsMappedItems_WhenCartIdValid()
 		{
 			// Arrange
 			var itemsFromRepo = new List<CartItem>()
@@ -91,14 +91,14 @@ namespace CartService.Tests
 				new CartItemDto { Id = 2, Name = "Repo Item 2", Price = 200, Quantity = 2 }
 			};
 
-			cartRepositoryMock.Setup(r => r.GetCartItems(cartId)).Returns(itemsFromRepo);
+			cartRepositoryMock.Setup(r => r.GetCartItemsAsync(cartId)).ReturnsAsync(itemsFromRepo);
 			mapperMock.Setup(m => m.Map<IEnumerable<CartItemDto>>(itemsFromRepo)).Returns(mappedDtos);
 
 			// Act
-			var result = cartService.GetCartItems(cartId);
+			var result = await cartService.GetCartItemsAsync(cartId);
 
 			// Assert
-			cartRepositoryMock.Verify(r => r.GetCartItems(cartId), Times.Once());
+			cartRepositoryMock.Verify(r => r.GetCartItemsAsync(cartId), Times.Once());
 			mapperMock.Verify(m => m.Map<IEnumerable<CartItemDto>>(itemsFromRepo), Times.Once());
 			CollectionAssert.AreEqual((System.Collections.ICollection)mappedDtos, (System.Collections.ICollection)result);
 		}
@@ -110,17 +110,17 @@ namespace CartService.Tests
 			var emptyId = Guid.Empty;
 
 			// Act & Assert
-			Assert.ThrowsException<ArgumentException>(() => cartService.GetCartItems(emptyId));
+			Assert.ThrowsExceptionAsync<ArgumentException>(() => cartService.GetCartItemsAsync(emptyId));
 		}
 
 		[TestMethod]
-		public void RemoveCartItem_CallsRepositoryRemove_WhenInputIsValid()
+		public async Task RemoveCartItem_CallsRepositoryRemove_WhenInputIsValid()
 		{
 			// Act
-			cartService.RemoveCartItem(cartId, cartItem.Id);
+			await cartService.RemoveCartItemAsync(cartId, cartItem.Id);
 
 			// Assert
-			cartRepositoryMock.Verify(m => m.RemoveCartItem(cartId, cartItem.Id), Times.Once());
+			cartRepositoryMock.Verify(m => m.RemoveCartItemAsync(cartId, cartItem.Id), Times.Once());
 		}
 
 		[TestMethod]
@@ -130,7 +130,7 @@ namespace CartService.Tests
 			var emptyId = Guid.Empty;
 
 			// Act & Assert
-			Assert.ThrowsException<ArgumentException>(() => cartService.RemoveCartItem(emptyId, cartItem.Id));
+			Assert.ThrowsExceptionAsync<ArgumentException>(() => cartService.RemoveCartItemAsync(emptyId, cartItem.Id));
 		}
 
 		[TestMethod]
@@ -140,7 +140,7 @@ namespace CartService.Tests
 			int negativeId = -1;
 
 			// Act & Assert
-			Assert.ThrowsException<ArgumentOutOfRangeException>(() => cartService.RemoveCartItem(cartId, negativeId));
+			Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(() => cartService.RemoveCartItemAsync(cartId, negativeId));
 		}
 	}
 }
