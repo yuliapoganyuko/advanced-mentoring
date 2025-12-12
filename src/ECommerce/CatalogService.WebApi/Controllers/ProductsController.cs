@@ -1,5 +1,6 @@
 ﻿using CatalogService.Core;
 using CatalogService.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CatalogService.WebApi.Controllers
@@ -20,6 +21,8 @@ namespace CatalogService.WebApi.Controllers
 		/// </summary>
 		/// <returns>List of product models</returns>
 		/// <response code="200">Request was performed successfully.</response>
+		/// <response code="401">Unauthorized</response>
+		[Authorize(Roles = "Manager,Store customer")]
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		public async Task<ActionResult<IEnumerable<ProductDto>>> List(
@@ -52,6 +55,8 @@ namespace CatalogService.WebApi.Controllers
 		/// <returns>Product model</returns>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If id is not a positive value</response>
+		/// <response code="401">Unauthorized</response>
+		[Authorize(Roles = "Manager,Store customer")]
 		[HttpGet("{id}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -72,6 +77,9 @@ namespace CatalogService.WebApi.Controllers
 		/// <returns></returns>
 		/// <response code="201">Request was performed successfully.</response>
 		/// <response code="400">If product model is invalid</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
+		[Authorize(Roles = "Manager")]
 		[HttpPost]
 		[ProducesResponseType(StatusCodes.Status201Created)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -99,6 +107,9 @@ namespace CatalogService.WebApi.Controllers
 		/// <returns></returns>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If product model is invalid or id is not a positive value</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
+		[Authorize(Roles = "Manager")]
 		[HttpPut("{id}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -126,6 +137,9 @@ namespace CatalogService.WebApi.Controllers
 		/// <returns></returns>
 		/// <response code="204">Request was performed successfully.</response>
 		/// <response code="400">If id is not a positive value</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
+		[Authorize(Roles = "Manager")]
 		[HttpDelete("{id}")]
 		[ProducesResponseType(StatusCodes.Status204NoContent)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -3,7 +3,10 @@ using System.Text;
 using System.Text.Json;
 using CatalogService.Core;
 using CatalogService.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -194,7 +197,29 @@ namespace CatalogService.WebApi.Tests
 
 					services.AddSingleton<ICategoryService>(sp => CategoryServiceMock.Object);
 					services.AddSingleton<IProductService>(sp => ProductServiceMock.Object);
+					
+					// Make all Authorize checks succeed in tests
+					services.AddSingleton<IAuthorizationMiddlewareResultHandler, TestAuthorizationMiddlewareResultHandler>();
 				});
+			}
+		}
+		
+		private class TestAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewareResultHandler
+		{
+			private readonly AuthorizationMiddlewareResultHandler defaultHandler = new();
+
+			public async Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
+			{
+				// If authorization succeeded, behave normally.
+				if (authorizeResult.Succeeded)
+				{
+					await defaultHandler.HandleAsync(next, context, policy, authorizeResult);
+					return;
+				}
+
+				// For tests: ignore failures (both Forbid and Challenge) and continue the pipeline.
+				// This makes [Authorize] effectively a no-op for test requests.
+				await next(context);
 			}
 		}
 	}
