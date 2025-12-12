@@ -3,14 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CartService.Core;
 using CartService.WebApi.Controllers;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -201,6 +210,8 @@ namespace CartService.WebApi.Tests
 		/// <summary>
 		/// A small WebApplicationFactory that replaces the ICartService registration with a Mock instance
 		/// so tests can run as integration tests while controlling the service behavior.
+		/// Also replaces the JwtBearer authentication handler with a test handler that always succeeds,
+		/// effectively ignoring authorization for integration tests.
 		/// </summary>
 		private sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 		{
@@ -221,7 +232,29 @@ namespace CartService.WebApi.Tests
 						services.Remove(descriptor);
 
 					services.AddSingleton<ICartService>(sp => CartServiceMock.Object);
+
+					// Make all Authorize checks succeed in tests
+					services.AddSingleton<IAuthorizationMiddlewareResultHandler, TestAuthorizationMiddlewareResultHandler>();
 				});
+			}
+		}
+
+		private class TestAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewareResultHandler
+		{
+			private readonly AuthorizationMiddlewareResultHandler defaultHandler = new();
+
+			public async Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy, PolicyAuthorizationResult authorizeResult)
+			{
+				// If authorization succeeded, behave normally.
+				if (authorizeResult.Succeeded)
+				{
+					await defaultHandler.HandleAsync(next, context, policy, authorizeResult);
+					return;
+				}
+
+				// For tests: ignore failures (both Forbid and Challenge) and continue the pipeline.
+				// This makes [Authorize] effectively a no-op for test requests.
+				await next(context);
 			}
 		}
 	}

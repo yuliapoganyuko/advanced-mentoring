@@ -1,5 +1,6 @@
 ﻿using Asp.Versioning;
 using CartService.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CartService.WebApi.Controllers
@@ -7,6 +8,7 @@ namespace CartService.WebApi.Controllers
 	[ApiVersion("1")]
 	[ApiVersion("2")]
 	[ApiController]
+	[Authorize(Roles = "Manager,Store customer")]
 	[Route("api/v{v:apiVersion}/[controller]")]
 	public class CartsController : ControllerBase
 	{
@@ -23,6 +25,8 @@ namespace CartService.WebApi.Controllers
 		/// <returns>Cart model</returns>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If cartId is null or not GUID</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
 		[MapToApiVersion("1")]
 		[HttpGet("{cartId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
@@ -51,6 +55,8 @@ namespace CartService.WebApi.Controllers
 		/// <returns>The list of cart items</returns>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If cartId is null or not GUID</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
 		[MapToApiVersion("2")]
 		[HttpGet("{cartId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
@@ -86,6 +92,8 @@ namespace CartService.WebApi.Controllers
 		/// </remarks>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If the item is null or cartId is null or not GUID</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
 		[HttpPost("{cartId}/items")]
 		[MapToApiVersion("1")]
 		[MapToApiVersion("2")]
@@ -121,6 +129,8 @@ namespace CartService.WebApi.Controllers
 		/// <returns></returns>
 		/// <response code="200">Request was performed successfully.</response>
 		/// <response code="400">If cartId is null or not GUID</response>
+		/// <response code="401">Unauthorized</response>
+		/// <response code="403">Forbidden</response>
 		[HttpDelete("{cartId}/items/{itemId}")]
 		[MapToApiVersion("1")]
 		[MapToApiVersion("2")]

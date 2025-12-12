@@ -1,9 +1,12 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using AutoMapper;
 using CartService.WebApi.BackgroundServices;
 using CartService.WebApi.OpenApi;
 using Messaging.Abstractions;
 using Messaging.Client;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CartService.WebApi
 {
@@ -14,6 +17,20 @@ namespace CartService.WebApi
 			var builder = WebApplication.CreateBuilder(args);
 
 			// Add services to the container.
+			
+			builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+				.AddJwtBearer(options =>
+				{
+					options.Authority = $"https://{builder.Configuration["Auth0:Domain"]}/";
+					options.Audience = builder.Configuration["Auth0:Audience"];
+					options.TokenValidationParameters = new TokenValidationParameters
+					{
+						ValidateAudience = false,
+						RoleClaimType = ClaimTypes.Role
+					};
+				});
+
+			builder.Services.AddAuthorization();
 
 			builder.Services.AddControllers();
 			builder.Services.AddLogging(builder => builder.AddConsole());
@@ -52,7 +69,11 @@ namespace CartService.WebApi
 			builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
 
 			var app = builder.Build();
-			
+
+			app.UseAuthentication();
+			app.UseMiddleware<TokenLoggingMiddleware>();
+			app.UseAuthorization();
+
 			app.MapControllers();
 
 			// Configure the HTTP request pipeline.
